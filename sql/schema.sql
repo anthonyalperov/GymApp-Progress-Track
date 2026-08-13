@@ -2,15 +2,19 @@ CREATE TABLE IF NOT EXISTS users(
     user_id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     age INTEGER,
-    weight REAL,
+    bodyweight REAL,
     username TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS exercises(
     exercise_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    exercise_name TEXT NOT NULL UNIQUE,
-    muscle_group TEXT NOT NULL
+    user_id INTEGER NOT NULL,
+    exercise_name TEXT NOT NULL,
+    muscle_group TEXT NOT NULL,
+
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    UNIQUE(user_id, exercise_name)
 );
 
 CREATE TABLE IF NOT EXISTS workouts(
