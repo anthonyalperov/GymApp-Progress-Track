@@ -1,6 +1,17 @@
-from database import addUser, deleteUser, showAccountDetails, getUserId, addExercise
-from database import create_database
-from database import checkLoginCredentials
+from database import (
+    addUser,
+    deleteUser,
+    displayRecentWorkout,
+    showAccountDetails,
+    getUserId,
+    getUserWorkouts,
+    addExercise,
+    addWorkout,
+    addWorkoutSet,
+    getUserExercises,
+    create_database,
+    checkLoginCredentials
+)
 
 #This section is for creating a user and getting their information
 def createUser() -> dict:
@@ -74,6 +85,9 @@ def getExerciseInput(user_id):
     }
 
     while True:
+        print("\nMuscle Groups:")
+        for key, value in muscle_groups.items():
+            print(f"{key}. {value}")
         choice = input("Choose a muscle group: ")
 
         if choice in muscle_groups:
@@ -86,6 +100,131 @@ def getExerciseInput(user_id):
 
     print(f"{exercise_name} added successfully!")
 
+def getWorkoutInput(user_id):
+    print("Add Workout Details: Example: 12/25/2026")
+    workout_date = input("Enter the workout date: ").strip()
+    notes = input("Enter any notes for the workout: ").strip()
+
+    workout_id = addWorkout(user_id, workout_date, notes)
+
+    print(f"{workout_date} added successfully!")
+
+    return workout_id
+
+def getWorkoutSetInput(user_id):
+
+    # Display workouts
+    workouts = getUserWorkouts(user_id)
+
+    if not workouts:
+        print("You have no workouts.")
+        return
+
+    print("\n--- Your Workouts ---")
+
+    for workout in workouts:
+        print(
+            f"Workout ID: {workout[0]} | "
+            f"Date: {workout[1]} | "
+            f"Notes: {workout[2]}"
+        )
+
+    workout_id = int(input("\nEnter Workout ID: "))
+
+
+    # Display exercises
+    exercises = getUserExercises(user_id)
+
+    if not exercises:
+        print("You have no exercises.")
+        return
+
+    print("\n--- Your Exercises ---")
+
+    for exercise in exercises:
+        print(
+            f"Exercise ID: {exercise[0]} | "
+            f"{exercise[1]} | "
+            f"{exercise[2]}"
+        )
+
+    exercise_id = int(input("\nEnter Exercise ID: "))
+
+
+    # Get set information
+    set_number = int(input("Enter Set Number: "))
+    weight = float(input("Enter Weight in lbs: "))
+    reps = int(input("Enter Reps: "))
+
+
+    addWorkoutSet(
+        workout_id,
+        exercise_id,
+        set_number,
+        weight,
+        reps
+    )
+
+    print("Workout set added successfully!")
+
+
+
+def chooseWorkout(user_id):
+    workouts = getUserWorkouts(user_id)
+
+    if not workouts:
+        print("You have no workouts available.")
+        return None
+
+    print("\n--- Your Workouts ---")
+
+    for number, workout in enumerate(workouts, start=1):
+        workout_id = workout[0]
+        workout_date = workout[1]
+        notes = workout[2]
+
+        print(f"{number}. {workout_date} - {notes}")
+
+    while True:
+        try:
+            choice = int(input("Choose a workout: "))
+
+            if 1 <= choice <= len(workouts):
+                selected_workout = workouts[choice - 1]
+
+                return selected_workout[0]
+
+            print("Invalid choice.")
+
+        except ValueError:
+            print("Please enter a number.")
+
+
+def chooseExercise(user_id):
+
+    exercises = getUserExercises(user_id)
+
+    if not exercises:
+        print("You have no exercises available.")
+        return None
+
+    print("\n--- Your Exercises ---")
+
+    for number, exercise in enumerate(exercises, start=1):
+        print(f"{number}. {exercise[1]}")
+
+    while True:
+        try:
+            choice = int(input("Choose an exercise: "))
+
+            if 1 <= choice <= len(exercises):
+                selected_exercise = exercises[choice - 1]
+                return selected_exercise[0]
+
+            print("Invalid choice.")
+
+        except ValueError:
+            print("Please enter a number.")
 #Main function to initialize the database and create a user
 def main():
     create_database()
@@ -113,18 +252,36 @@ def main():
                     "\n1. Show Account Details\n"
                     "2. Delete Account\n"
                     "3. Add Exercise\n"
+                    "4. Add Workout\n"
+                    "5. Add Workout Set\n"
                     "Choose an option: "
                 )
 
-                if choice2 == "1":
+                if choice2 == "1": #Show account details
                     showAccountDetails(username, password)
 
-                elif choice2 == "2":
+                elif choice2 == "2": #Delete account
                     deleteUser(username)
 
-                elif choice2 == "3":
+                elif choice2 == "3": #Add exercise
                     user_id = getUserId(username, password)
                     getExerciseInput(user_id)
+                    displayRecentWorkout(user_id)
+
+                elif choice2 == "4":
+                    user_id = getUserId(username, password)
+
+                    workout_id = getWorkoutInput(user_id)
+
+                    print(f"Workout ID: {workout_id}")
+
+                    displayRecentWorkout(user_id)
+
+                elif choice2 == "5":
+                    user_id = getUserId(username, password)
+                    getWorkoutSetInput(user_id)
+                    displayRecentWorkout(user_id)
+
 
                 else:
                     print("Invalid option.")
@@ -138,6 +295,8 @@ def main():
 
             if checkLoginCredentials(username, password):
                 showAccountDetails(username, password)
+                user_id = getUserId(username, password)
+                displayRecentWorkout(user_id)
             else:
                 print("Invalid username or password.")
 
