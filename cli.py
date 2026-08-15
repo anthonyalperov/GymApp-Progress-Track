@@ -34,8 +34,6 @@ from backend.charts import (
 )
 
 from datetime import datetime, timedelta
-from frontend.app import runApp
-
 
 # =========================
 # USER INPUT
@@ -239,39 +237,6 @@ def chooseExercise(user_id):
 # =========================
 # WORKOUTS
 # =========================
-from datetime import datetime
-
-
-def getWorkoutDate() -> str:
-    while True:
-        date_input = input(
-            "Enter Workout Date (MM/DD/YY or MM/DD/YYYY): "
-        ).strip()
-
-        date_formats = [
-            "%m/%d/%y",
-            "%m/%d/%Y",
-            "%Y-%m-%d"
-        ]
-
-        for date_format in date_formats:
-            try:
-                workout_date = datetime.strptime(
-                    date_input,
-                    date_format
-                )
-
-                # Store consistently in SQLite
-                return workout_date.strftime("%Y-%m-%d")
-
-            except ValueError:
-                continue
-
-        print(
-            "Invalid date. Examples: "
-            "8/15/26, 08/15/2026, or 2026-08-15"
-        )
-
 
 def getWorkoutInput(user_id):
     workout_date = getWorkoutDate()
@@ -811,7 +776,53 @@ def showExerciseStatisticsPage(user_id):
 # =========================
 
 def main():
-    runApp()
+    create_database()
+
+    while True:
+        print("\n--- GymApp ---")
+        print("1. Create Account")
+        print("2. Login")
+        print("3. Exit")
+
+        choice = input(
+            "Choose an option: "
+        ).strip()
+
+        if choice == "1":
+            createUser()
+
+        elif choice == "2":
+            username = getUsername()
+            password = getPassword()
+
+            if not checkLoginCredentials(
+                username,
+                password
+            ):
+                print(
+                    "Invalid username or password."
+                )
+                continue
+
+            user_id = getUserId(
+                username,
+                password
+            )
+
+            print("Login successful!")
+
+            loggedInMenu(
+                user_id,
+                username,
+                password
+            )
+
+        elif choice == "3":
+            print("Goodbye!")
+            break
+
+        else:
+            print("Invalid option.")
 
 
 if __name__ == "__main__":
