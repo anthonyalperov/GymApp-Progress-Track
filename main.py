@@ -18,9 +18,22 @@ from database import (
 
     addWorkoutSet,
     getWorkoutSets,
-    deleteWorkoutSet
+    deleteWorkoutSet,
+
+    getWeeklyMuscleGroupFrequency,
+    getExerciseHistory,
+    getUserBodyweight
 )
 
+from charts import (
+    showMuscleGroupFrequency,
+    showProgressiveOverload,
+    showEstimatedOneRepMax,
+    showWhatIfProjection,
+    showExerciseStatistics
+)
+
+from datetime import datetime, timedelta
 
 # =========================
 # USER INPUT
@@ -87,6 +100,14 @@ def getPassword() -> str:
 
         print("Password cannot be empty.")
 
+def getExerciseName(user_id, exercise_id):
+    exercises = getUserExercises(user_id)
+
+    for exercise in exercises:
+        if exercise[0] == exercise_id:
+            return exercise[1]
+
+    return None
 
 # =========================
 # USER ACCOUNT
@@ -218,14 +239,7 @@ def chooseExercise(user_id):
 # =========================
 
 def getWorkoutInput(user_id):
-    print(
-        "\nAdd Workout Details "
-        "(Example: 12/25/2026)"
-    )
-
-    workout_date = input(
-        "Enter the workout date: "
-    ).strip()
+    workout_date = getWorkoutDate()
 
     notes = input(
         "Enter any notes for the workout: "
@@ -314,12 +328,25 @@ def getSetNumber() -> int:
             print("Please enter a valid number.")
 
 
-def getWeight() -> float:
+def getWeight(user_id) -> float:
     while True:
+        choice = input(
+            "Enter Weight in lbs or type B for Bodyweight: "
+        ).strip().lower()
+
+        if choice == "b":
+            bodyweight = getUserBodyweight(user_id)
+
+            if bodyweight is None:
+                print("Bodyweight could not be found.")
+                continue
+
+            print(f"Using Bodyweight: {bodyweight} lb")
+
+            return bodyweight
+
         try:
-            weight = float(
-                input("Enter Weight in lbs: ")
-            )
+            weight = float(choice)
 
             if weight < 0:
                 print("Weight cannot be negative.")
@@ -328,7 +355,10 @@ def getWeight() -> float:
             return weight
 
         except ValueError:
-            print("Please enter a valid number.")
+            print(
+                "Please enter a valid weight "
+                "or B for Bodyweight."
+            )
 
 
 def getReps() -> int:
@@ -360,7 +390,7 @@ def getWorkoutSetInput(user_id):
         return
 
     set_number = getSetNumber()
-    weight = getWeight()
+    weight = getWeight(user_id)
     reps = getReps()
 
     set_id = addWorkoutSet(
@@ -440,7 +470,8 @@ def loggedInMenu(user_id, username, password):
         print("7. Delete Workout")
         print("8. Delete Workout Set")
         print("9. Delete Account")
-        print("10. Logout")
+        print("10. Analytics")
+        print("11. Logout")
 
         choice = input(
             "Choose an option: "
@@ -470,10 +501,7 @@ def loggedInMenu(user_id, username, password):
             if exercise_id is None:
                 continue
 
-            if deleteExercise(
-                user_id,
-                exercise_id
-            ):
+            if deleteExercise(user_id, exercise_id):
                 print("Exercise deleted successfully.")
             else:
                 print("Exercise could not be deleted.")
@@ -484,10 +512,7 @@ def loggedInMenu(user_id, username, password):
             if workout_id is None:
                 continue
 
-            if deleteWorkout(
-                user_id,
-                workout_id
-            ):
+            if deleteWorkout(user_id, workout_id):
                 print("Workout deleted successfully.")
             else:
                 print("Workout could not be deleted.")
@@ -498,22 +523,15 @@ def loggedInMenu(user_id, username, password):
             if set_id is None:
                 continue
 
-            if deleteWorkoutSet(
-                user_id,
-                set_id
-            ):
-                print(
-                    "Workout set deleted successfully."
-                )
+            if deleteWorkoutSet(user_id, set_id):
+                print("Workout set deleted successfully.")
             else:
-                print(
-                    "Workout set could not be deleted."
-                )
+                print("Workout set could not be deleted.")
 
         elif choice == "9":
             confirmation = input(
-                "Are you sure you want to "
-                "delete your account? (yes/no): "
+                "Are you sure you want to delete your account? "
+                "(yes/no): "
             ).strip().lower()
 
             if confirmation != "yes":
@@ -527,13 +545,232 @@ def loggedInMenu(user_id, username, password):
             print("Account could not be deleted.")
 
         elif choice == "10":
+            analyticsMenu(user_id)
+
+        elif choice == "11":
             print("Logged out.")
             return
 
         else:
             print("Invalid option.")
 
+#=========================
+# MUSCLE GROUP FREQUENCY
+#========================
 
+def showWeeklyMuscleGraph(user_id):
+    while True:
+        date_input = input(
+            "Enter any date from the week (Example: 8/13/26): "
+        ).strip()
+
+        date_formats = [
+            "%m/%d/%y",
+            "%m/%d/%Y",
+            "%Y-%m-%d"
+        ]
+
+        selected_date = None
+
+        for date_format in date_formats:
+            try:
+                selected_date = datetime.strptime(
+                    date_input,
+                    date_format
+                )
+                break
+
+            except ValueError:
+                pass
+
+        if selected_date is not None:
+            break
+
+        print("Invalid date. Example: 8/13/26")
+
+    start_date = selected_date - timedelta(
+        days=selected_date.weekday()
+    )
+
+    end_date = start_date + timedelta(days=6)
+
+    print(
+        f"\nWeek selected: "
+        f"{start_date.strftime('%m/%d/%y')} - "
+        f"{end_date.strftime('%m/%d/%y')}"
+    )
+
+    start_date_db = start_date.strftime("%Y-%m-%d")
+    end_date_db = end_date.strftime("%Y-%m-%d")
+
+    data = getWeeklyMuscleGroupFrequency(
+        user_id,
+        start_date_db,
+        end_date_db
+    )
+
+    if not data:
+        print("No workout data found for that week.")
+        return
+
+    showMuscleGroupFrequency(data)
+
+def showProgressiveOverloadGraph(user_id):
+    exercise_id = chooseExercise(user_id)
+
+    if exercise_id is None:
+        return
+
+    exercise_name = getExerciseName(
+        user_id,
+        exercise_id
+    )
+
+    data = getExerciseHistory(
+        user_id,
+        exercise_id
+    )
+
+    if not data:
+        print("No workout history found for that exercise.")
+        return
+
+    showProgressiveOverload(
+        data,
+        exercise_name
+    )
+
+def showOneRepMaxGraph(user_id):
+    exercise_id = chooseExercise(user_id)
+
+    if exercise_id is None:
+        return
+
+    exercise_name = getExerciseName(
+        user_id,
+        exercise_id
+    )
+
+    data = getExerciseHistory(
+        user_id,
+        exercise_id
+    )
+
+    if not data:
+        print("No workout history found for that exercise.")
+        return
+
+    showEstimatedOneRepMax(
+        data,
+        exercise_name
+    )
+
+def showWhatIfGraph(user_id):
+    exercise_id = chooseExercise(user_id)
+
+    if exercise_id is None:
+        return
+
+    exercise_name = getExerciseName(
+        user_id,
+        exercise_id
+    )
+
+    while True:
+        try:
+            starting_weight = float(
+                input("Enter Starting Weight: ")
+            )
+
+            increase_amount = float(
+                input("Increase Weight By: ")
+            )
+
+            number_of_periods = int(
+                input("Number of Progression Periods: ")
+            )
+
+            if starting_weight <= 0:
+                print("Starting weight must be greater than 0.")
+                continue
+
+            if number_of_periods <= 0:
+                print("Periods must be greater than 0.")
+                continue
+
+            break
+
+        except ValueError:
+            print("Please enter valid numbers.")
+
+    showWhatIfProjection(
+        starting_weight,
+        increase_amount,
+        number_of_periods,
+        exercise_name
+    )
+
+def analyticsMenu(user_id):
+
+    while True:
+        print("\n--- GymApp Analytics ---")
+        print("1. Weekly Muscle Group Frequency")
+        print("2. Progressive Overload")
+        print("3. Estimated 1RM")
+        print("4. What-If Projection")
+        print("5. Exercise Statistics")
+        print("6. Back")
+
+        choice = input(
+            "Choose an option: "
+        ).strip()
+
+        if choice == "1":
+            showWeeklyMuscleGraph(user_id)
+
+        elif choice == "2":
+            showProgressiveOverloadGraph(user_id)
+
+        elif choice == "3":
+            showOneRepMaxGraph(user_id)
+
+        elif choice == "4":
+            showWhatIfGraph(user_id)
+
+        elif choice == "5":
+            showExerciseStatisticsPage(user_id)
+
+        elif choice == "6":
+            return
+
+        else:
+            print("Invalid option.")
+
+
+def showExerciseStatisticsPage(user_id):
+    exercise_id = chooseExercise(user_id)
+
+    if exercise_id is None:
+        return
+
+    exercise_name = getExerciseName(
+        user_id,
+        exercise_id
+    )
+
+    data = getExerciseHistory(
+        user_id,
+        exercise_id
+    )
+
+    if not data:
+        print("No workout history found for that exercise.")
+        return
+
+    showExerciseStatistics(
+        data,
+        exercise_name
+    )
 # =========================
 # MAIN MENU
 # =========================

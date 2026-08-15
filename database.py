@@ -360,3 +360,86 @@ def deleteWorkoutSet(user_id, set_id):
     connection.close()
 
     return deleted > 0
+
+#========================
+# GRAPH DATA
+#========================
+
+def getWeeklyMuscleGroupFrequency(user_id, start_date, end_date):
+    connection = getConnection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT
+            e.muscle_group,
+            COUNT(DISTINCT w.workout_id)
+        FROM workouts w
+        JOIN workout_sets ws
+            ON w.workout_id = ws.workout_id
+        JOIN exercises e
+            ON ws.exercise_id = e.exercise_id
+        WHERE w.user_id = ?
+        AND w.workout_date BETWEEN ? AND ?
+        GROUP BY e.muscle_group
+        ORDER BY e.muscle_group
+        """,
+        (user_id, start_date, end_date)
+    )
+
+    data = cursor.fetchall()
+
+    connection.close()
+
+    return data
+
+
+def getExerciseHistory(user_id, exercise_id):
+    connection = getConnection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT
+            w.workout_date,
+            ws.weight,
+            ws.reps
+        FROM workout_sets ws
+        JOIN workouts w
+            ON ws.workout_id = w.workout_id
+        JOIN exercises e
+            ON ws.exercise_id = e.exercise_id
+        WHERE w.user_id = ?
+        AND e.exercise_id = ?
+        ORDER BY w.workout_date
+        """,
+        (user_id, exercise_id)
+    )
+
+    data = cursor.fetchall()
+
+    connection.close()
+
+    return data
+
+
+def getUserBodyweight(user_id):
+    connection = getConnection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT bodyweight
+        FROM users
+        WHERE user_id = ?
+        """,
+        (user_id,)
+    )
+
+    user = cursor.fetchone()
+    connection.close()
+
+    if user:
+        return user[0]
+
+    return None
