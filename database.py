@@ -1,11 +1,19 @@
 import sqlite3
 
-#This section is for filling in SQL database with user information and retrieving it when needed
 
+# =========================
+# DATABASE CONNECTION
+# =========================
 
-#This section is for creating the database and adding users to it
-def create_database():
+def getConnection():
     connection = sqlite3.connect("database/gym.db")
+    connection.execute("PRAGMA foreign_keys = ON")
+    return connection
+
+
+def create_database():
+    connection = getConnection()
+
     with open("sql/schema.sql", "r") as file:
         schema = file.read()
 
@@ -13,14 +21,20 @@ def create_database():
     connection.commit()
     connection.close()
 
+
+# =========================
+# USERS
+# =========================
+
 def addUser(name, age, bodyweight, username, password):
-    connection = sqlite3.connect("database/gym.db")
+    connection = getConnection()
     cursor = connection.cursor()
 
     try:
         cursor.execute(
             """
-            INSERT INTO users (name, age, bodyweight, username, password)
+            INSERT INTO users
+            (name, age, bodyweight, username, password)
             VALUES (?, ?, ?, ?, ?)
             """,
             (name, age, bodyweight, username, password)
@@ -35,8 +49,9 @@ def addUser(name, age, bodyweight, username, password):
     finally:
         connection.close()
 
+
 def getUserId(username, password):
-    connection = sqlite3.connect("database/gym.db")
+    connection = getConnection()
     cursor = connection.cursor()
 
     cursor.execute(
@@ -49,6 +64,7 @@ def getUserId(username, password):
     )
 
     user = cursor.fetchone()
+
     connection.close()
 
     if user:
@@ -56,43 +72,13 @@ def getUserId(username, password):
 
     return None
 
-def deleteUser(username):
-    connection = sqlite3.connect("database/gym.db")
-    cursor = connection.cursor()
-
-    cursor.execute(
-        """
-        DELETE FROM users
-        WHERE username = ?
-        """,
-        (username,)
-    )
-
-    connection.commit()
-    connection.close()
 
 def checkLoginCredentials(username, password):
-    connection = sqlite3.connect("database/gym.db")
-    cursor = connection.cursor()
+    return getUserId(username, password) is not None
 
-    cursor.execute(
-        """
-        SELECT user_id
-        FROM users
-        WHERE username = ? AND password = ?
-        """,
-        (username, password)
-    )
 
-    user = cursor.fetchone()
-
-    connection.close()
-
-    return user is not None
-
-def showAccountDetails(username: str, password: str) -> None:
-
-    connection = sqlite3.connect("database/gym.db")
+def showAccountDetails(username, password):
+    connection = getConnection()
     cursor = connection.cursor()
 
     cursor.execute(
@@ -105,77 +91,130 @@ def showAccountDetails(username: str, password: str) -> None:
     )
 
     user = cursor.fetchone()
+
     connection.close()
 
-    if user:
-        print("\n--- Account Details ---")
-        print(f"User ID: {user[0]}")
-        print(f"Name: {user[1]}")
-        print(f"Age: {user[2]}")
-        print(f"Body Weight: {user[3]} lb")
-        print(f"Username: {user[4]}")
-    else:
-        print("Account not found.")
+    return user
 
-#This section is for inputing exercises
-def addExercise(user_id, exercise_name, muscle_group):
-    connection = sqlite3.connect("database/gym.db")
+
+def deleteUser(user_id):
+    connection = getConnection()
     cursor = connection.cursor()
 
     cursor.execute(
         """
-        INSERT INTO exercises (user_id, exercise_name, muscle_group)
-        VALUES (?, ?, ?)
+        DELETE FROM users
+        WHERE user_id = ?
         """,
-        (user_id, exercise_name, muscle_group)
+        (user_id,)
     )
+
+    deleted = cursor.rowcount
 
     connection.commit()
     connection.close()
 
+    return deleted > 0
 
-    #Muscle Groups I hit:
-    # Chest
-    # Back
-    # Legs
-    # Arms
-    # Shoulders
-    # Abs
 
-def deleteExercise(user_id, exercise_name):
-    connection = sqlite3.connect("database/gym.db")
+# =========================
+# EXERCISES
+# =========================
+
+def addExercise(user_id, exercise_name, muscle_group):
+    connection = getConnection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            """
+            INSERT INTO exercises
+            (user_id, exercise_name, muscle_group)
+            VALUES (?, ?, ?)
+            """,
+            (user_id, exercise_name, muscle_group)
+        )
+
+        connection.commit()
+        return True
+
+    except sqlite3.IntegrityError:
+        return False
+
+    finally:
+        connection.close()
+
+
+def getUserExercises(user_id):
+    connection = getConnection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT exercise_id, exercise_name, muscle_group
+        FROM exercises
+        WHERE user_id = ?
+        ORDER BY exercise_name
+        """,
+        (user_id,)
+    )
+
+    exercises = cursor.fetchall()
+
+    connection.close()
+
+    return exercises
+
+
+def deleteExercise(user_id, exercise_id):
+    connection = getConnection()
     cursor = connection.cursor()
 
     cursor.execute(
         """
         DELETE FROM exercises
-        WHERE user_id = ? AND exercise_name = ?
+        WHERE exercise_id = ?
+        AND user_id = ?
         """,
-        (user_id, exercise_name)
+        (exercise_id, user_id)
     )
+
+    deleted = cursor.rowcount
 
     connection.commit()
     connection.close()
 
+    return deleted > 0
+
+
+# =========================
+# WORKOUTS
+# =========================
+
 def addWorkout(user_id, workout_date, notes):
-    connection = sqlite3.connect("database/gym.db")
+    connection = getConnection()
     cursor = connection.cursor()
 
     cursor.execute(
         """
-        INSERT INTO workouts (user_id, workout_date, notes)
+        INSERT INTO workouts
+        (user_id, workout_date, notes)
         VALUES (?, ?, ?)
         """,
         (user_id, workout_date, notes)
     )
 
     connection.commit()
+
     workout_id = cursor.lastrowid
+
     connection.close()
+
     return workout_id
 
+
 def getUserWorkouts(user_id):
-    connection = sqlite3.connect("database/gym.db")
+    connection = getConnection()
     cursor = connection.cursor()
 
     cursor.execute(
@@ -189,40 +228,23 @@ def getUserWorkouts(user_id):
     )
 
     workouts = cursor.fetchall()
+
     connection.close()
 
     return workouts
 
+
 def deleteWorkout(user_id, workout_id):
-    connection = sqlite3.connect("database/gym.db")
+    connection = getConnection()
     cursor = connection.cursor()
 
     cursor.execute(
         """
         DELETE FROM workouts
-        WHERE workout_id = ? AND user_id = ?
+        WHERE workout_id = ?
+        AND user_id = ?
         """,
         (workout_id, user_id)
-    )
-
-    connection.commit()
-    connection.close()
-
-def deleteWorkoutSet(user_id, set_id):
-    connection = sqlite3.connect("database/gym.db")
-    cursor = connection.cursor()
-
-    cursor.execute(
-        """
-        DELETE FROM workout_sets
-        WHERE set_id = ?
-        AND workout_id IN (
-            SELECT workout_id
-            FROM workouts
-            WHERE user_id = ?
-        )
-        """,
-        (set_id, user_id)
     )
 
     deleted = cursor.rowcount
@@ -234,12 +256,12 @@ def deleteWorkoutSet(user_id, set_id):
 
 
 def displayRecentWorkout(user_id):
-    connection = sqlite3.connect("database/gym.db")
+    connection = getConnection()
     cursor = connection.cursor()
 
     cursor.execute(
         """
-        SELECT workout_date, notes
+        SELECT workout_id, workout_date, notes
         FROM workouts
         WHERE user_id = ?
         ORDER BY workout_id DESC
@@ -249,17 +271,46 @@ def displayRecentWorkout(user_id):
     )
 
     recent_workout = cursor.fetchone()
+
     connection.close()
 
-    if recent_workout:
-        print("\n--- Most Recent Workout ---")
-        print(f"Date: {recent_workout[0]}")
-        print(f"Notes: {recent_workout[1]}")
-    else:
-        print("No workouts found.")
+    return recent_workout
+
+
+# =========================
+# WORKOUT SETS
+# =========================
+
+def addWorkoutSet(workout_id, exercise_id, set_number, weight, reps):
+    connection = getConnection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        INSERT INTO workout_sets
+        (workout_id, exercise_id, set_number, weight, reps)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (
+            workout_id,
+            exercise_id,
+            set_number,
+            weight,
+            reps
+        )
+    )
+
+    connection.commit()
+
+    set_id = cursor.lastrowid
+
+    connection.close()
+
+    return set_id
+
 
 def getWorkoutSets(workout_id):
-    connection = sqlite3.connect("database/gym.db")
+    connection = getConnection()
     cursor = connection.cursor()
 
     cursor.execute(
@@ -286,42 +337,26 @@ def getWorkoutSets(workout_id):
     return workout_sets
 
 
-def addWorkoutSet(workout_id, exercise_id, set_number, weight, reps):
-    connection = sqlite3.connect("database/gym.db")
+def deleteWorkoutSet(user_id, set_id):
+    connection = getConnection()
     cursor = connection.cursor()
 
     cursor.execute(
         """
-        INSERT INTO workout_sets
-        (workout_id, exercise_id, set_number, weight, reps)
-        VALUES (?, ?, ?, ?, ?)
+        DELETE FROM workout_sets
+        WHERE set_id = ?
+        AND workout_id IN (
+            SELECT workout_id
+            FROM workouts
+            WHERE user_id = ?
+        )
         """,
-        (workout_id, exercise_id, set_number, weight, reps)
+        (set_id, user_id)
     )
+
+    deleted = cursor.rowcount
 
     connection.commit()
-
-    set_id = cursor.lastrowid
-
     connection.close()
 
-    return set_id
-
-def getUserExercises(user_id):
-    connection = sqlite3.connect("database/gym.db")
-    cursor = connection.cursor()
-
-    cursor.execute(
-        """
-        SELECT exercise_id, exercise_name, muscle_group
-        FROM exercises
-        WHERE user_id = ?
-        ORDER BY exercise_id
-        """,
-        (user_id,)
-    )
-
-    exercises = cursor.fetchall()
-    connection.close()
-
-    return exercises
+    return deleted > 0
