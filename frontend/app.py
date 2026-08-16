@@ -57,7 +57,9 @@ from backend.database import (
     getExerciseHistory,
 )
 
+from pathlib import Path
 
+STYLE_PATH = Path(__file__).resolve().parent / "style.qss"
 # =========================================================
 # MATPLOTLIB CANVAS
 # =========================================================
@@ -84,9 +86,6 @@ class GymApp(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        with open("frontend/style.qss", "r") as file:
-            self.setStyleSheet(file.read())
-        
         create_database()
 
         self.user_id = None
@@ -1926,14 +1925,19 @@ class GymApp(QMainWindow):
 # START APPLICATION
 # =========================================================
 
-def runApp():
+STYLE_PATH = Path(__file__).resolve().parent / "style.qss"
 
+def runApp():
     app = QApplication(sys.argv)
 
-    window = GymApp()
+    with open(
+        STYLE_PATH,
+        "r",
+        encoding="utf-8"
+    ) as file:
+        app.setStyleSheet(file.read())
 
+    window = GymApp()
     window.show()
 
-    sys.exit(
-        app.exec()
-    )
+    sys.exit(app.exec())

@@ -1,4 +1,37 @@
 import sqlite3
+from pathlib import Path
+import os
+
+
+# =========================
+# APPLICATION PATHS
+# =========================
+
+APP_DATA_DIR = (
+    Path(os.getenv("LOCALAPPDATA"))
+    / "GymApp"
+)
+
+APP_DATA_DIR.mkdir(
+    parents=True,
+    exist_ok=True
+)
+
+DATABASE_PATH = (
+    APP_DATA_DIR
+    / "gym.db"
+)
+
+
+BACKEND_DIR = Path(__file__).resolve().parent
+
+PROJECT_ROOT = BACKEND_DIR.parent
+
+SCHEMA_PATH = (
+    PROJECT_ROOT
+    / "sql"
+    / "schema.sql"
+)
 
 
 # =========================
@@ -6,15 +39,23 @@ import sqlite3
 # =========================
 
 def getConnection():
-    connection = sqlite3.connect("database/gym.db")
-    connection.execute("PRAGMA foreign_keys = ON")
+    connection = sqlite3.connect(DATABASE_PATH)
+
+    connection.execute(
+        "PRAGMA foreign_keys = ON"
+    )
+
     return connection
 
 
 def create_database():
     connection = getConnection()
 
-    with open("sql/schema.sql", "r") as file:
+    with open(
+        SCHEMA_PATH,
+        "r",
+        encoding="utf-8"
+    ) as file:
         schema = file.read()
 
     connection.executescript(schema)
