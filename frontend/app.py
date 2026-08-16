@@ -84,6 +84,9 @@ class GymApp(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        with open("frontend/style.qss", "r") as file:
+            self.setStyleSheet(file.read())
+        
         create_database()
 
         self.user_id = None
@@ -107,6 +110,7 @@ class GymApp(QMainWindow):
 
         self.pages.setCurrentWidget(self.login_page)
 
+  
 
     # =====================================================
     # LOGIN
@@ -120,15 +124,17 @@ class GymApp(QMainWindow):
 
         layout.addStretch()
 
-        title = QLabel("GymApp")
+        title = QLabel("Gym Progress Tracker")
+        secondaryTitle = QLabel("Includes Exercises, Workouts, Sets, and Analytics such as Weekly Frequency, Progressive Overload, Estimated 1RM, and What Ifs")
         title.setAlignment(Qt.AlignCenter)
+        secondaryTitle.setAlignment(Qt.AlignCenter)
 
         title.setStyleSheet("""
             font-size: 36px;
             font-weight: bold;
         """)
 
-        subtitle = QLabel("Track. Analyze. Improve.")
+        subtitle = QLabel("Created by Anthony Alperov SWE student @ WSU")
         subtitle.setAlignment(Qt.AlignCenter)
 
         username_label = QLabel("Username")
@@ -157,8 +163,8 @@ class GymApp(QMainWindow):
         )
 
         layout.addWidget(title)
+        layout.addWidget(secondaryTitle)
         layout.addWidget(subtitle)
-
         layout.addSpacing(30)
 
         layout.addWidget(username_label)
