@@ -86,15 +86,15 @@ Allows users to project future lifting weight based on a starting weight, planne
 
 ### Login
 
-![GymApp Login](screenshots/login.png)
+![GymApp Login](<img width="1488" height="1024" alt="Screenshot 2026-08-15 192347" src="https://github.com/user-attachments/assets/cb4dec05-40b8-4c79-8f7a-1e58da516fef" />)
 
 ### Workout Set Tracking
 
-![GymApp Workout Sets](screenshots/workout-sets.png)
+![GymApp Workout Sets](<img width="1488" height="1039" alt="Screenshot 2026-08-15 192411" src="https://github.com/user-attachments/assets/4c5da05b-9b79-45db-b234-9963993675df" />)
 
 ### Training Analytics
 
-![GymApp Analytics](screenshots/analytics.png)
+![GymApp Analytics](<img width="1486" height="1033" alt="Screenshot 2026-08-15 192447" src="https://github.com/user-attachments/assets/45b2d863-07b1-4c24-8ba7-edef634d7af8" />)
 
 ---
 
