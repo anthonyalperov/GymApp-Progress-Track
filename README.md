@@ -7,6 +7,11 @@ Gym Progress Tracker allows users to create an account, manage exercises, record
 The project was built to combine database management, Python application logic, data analysis, and a desktop graphical interface into one complete application.
 
 ---
+## Download
+
+Download the latest Windows release from the GitHub Releases page.
+
+No Python installation is required.
 
 ## Features
 
@@ -258,42 +263,6 @@ python main.py
 ```
 
 User database information is stored separately in the user's local application-data directory so workout information remains persistent between application launches.
-
----
-
-## What I Learned
-
-Building GymApp gave me experience connecting multiple areas of software development within a single project, including:
-
-- Designing relational SQL tables
-- Writing SQL queries and joins
-- Implementing CRUD operations
-- Connecting Python to SQLite
-- Organizing backend and frontend code
-- Working with Python classes and functions
-- Processing data with Pandas
-- Creating visualizations with Matplotlib
-- Building event-driven desktop interfaces with PySide6
-- Connecting GUI events to backend operations
-- Managing persistent application data
-- Packaging a Python application as a Windows executable
-
-One of the main goals of this project was understanding how the different layers of an application communicate rather than treating the database, backend, analytics, and frontend as separate concepts.
-
----
-
-## Future Improvements
-
-GymApp V1 is feature complete, but possible future improvements include:
-
-- Password hashing and improved authentication security
-- Editing existing workouts and sets
-- Additional analytics
-- Exporting workout history
-- More advanced progression recommendations
-- Additional user customization
-
----
 
 ## Author
 
